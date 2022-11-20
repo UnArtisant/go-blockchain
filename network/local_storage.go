@@ -5,35 +5,35 @@ import (
 	"sync"
 )
 
-type LocalStorage struct {
+type LocalTransport struct {
 	addr      NetAddr
-	peers     map[NetAddr]*LocalStorage
+	peers     map[NetAddr]*LocalTransport
 	consumeCh chan RPC
 	lock      sync.RWMutex
 }
 
-func NewLocalStorage(addr NetAddr) *LocalStorage {
-	return &LocalStorage{
+func NewLocalTransport(addr NetAddr) *LocalTransport {
+	return &LocalTransport{
 		addr:      addr,
-		peers:     make(map[NetAddr]*LocalStorage),
+		peers:     make(map[NetAddr]*LocalTransport),
 		consumeCh: make(chan RPC, 1024),
 	}
 }
 
-func (t *LocalStorage) Consume() <-chan RPC {
+func (t *LocalTransport) Consume() <-chan RPC {
 	return t.consumeCh
 }
 
-func (t *LocalStorage) Connect(tr *LocalStorage) error {
+func (t *LocalTransport) Connect(tr Transport) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	t.peers[tr.Addr()] = tr
+	t.peers[tr.Addr()] = tr.(*LocalTransport)
 
 	return nil
 }
 
-func (t *LocalStorage) sendMessage(to NetAddr, payload []byte) error {
+func (t *LocalTransport) SendMessage(to NetAddr, payload []byte) error {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -51,6 +51,6 @@ func (t *LocalStorage) sendMessage(to NetAddr, payload []byte) error {
 	return nil
 }
 
-func (t *LocalStorage) Addr() NetAddr {
+func (t *LocalTransport) Addr() NetAddr {
 	return t.addr
 }
